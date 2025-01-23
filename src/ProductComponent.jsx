@@ -1,4 +1,4 @@
-import { Backdrop, Button, Divider, Modal, Typography, TextField, Select, MenuItem } from '@mui/material';
+import { Button, Divider, Modal, Typography, TextField, Select, MenuItem } from '@mui/material';
 import Box from '@mui/material/Box';
 import monkCommerceLogo from './logo/monkCommerceLogo.png';
 import ProductListComponent from './ProductListComponent';
