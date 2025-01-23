@@ -7,13 +7,13 @@ function ProductListComponent({ handlePopupClose, handleSelectedProducts }) {
 
     // State Management
     const [products, setProducts] = useState([]);
+    const [filteredProducts, setFilteredProducts] = useState([]);  // State to hold filtered products
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedVariants, setSelectedVariants] = useState({});
 
     // API Details
-    const apiUrl = 'https://stageapi.monkcommerce.app/task/products/search?search=Hat&page=2&limit=1';
     const apiKey = '72njgfa948d9aS7gs5'; 
 
     // Search Functionality
@@ -30,7 +30,7 @@ function ProductListComponent({ handlePopupClose, handleSelectedProducts }) {
         setSelectedVariants((prevSelectedVariants) => {
             const currentProductVariants = prevSelectedVariants[productId] || {};
             const isAllChecked = variants.every((variant) => currentProductVariants[variant.id]);
-            
+
             const updatedVariants = variants.reduce((acc, variant) => {
                 acc[variant.id] = !isAllChecked;
                 return acc;
@@ -48,11 +48,11 @@ function ProductListComponent({ handlePopupClose, handleSelectedProducts }) {
         });
     };
 
-    // Getting data from API
+    // Fetching products from API
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await axios.get(apiUrl, {
+                const response = await axios.get('https://stageapi.monkcommerce.app/task/products/search?page=1&limit=100', {
                     headers: {
                         "x-api-key": apiKey,
                     },
@@ -60,6 +60,8 @@ function ProductListComponent({ handlePopupClose, handleSelectedProducts }) {
 
                 console.log("Response : ", response.data);
                 setProducts(response.data || []);
+                setFilteredProducts(response.data || []); // Initially set filteredProducts to the full list
+
             } 
             catch (err) {
                 console.error("Error fetching data: ", err);
@@ -71,7 +73,23 @@ function ProductListComponent({ handlePopupClose, handleSelectedProducts }) {
         };
 
         fetchData();
-    }, [apiUrl]);
+    }, []); 
+
+    // Filter products based on search query
+    useEffect(() => {
+        const filterProducts = () => {
+            if (searchQuery.trim() === "") {
+                setFilteredProducts(products); // No search, show all products
+            } else {
+                const filtered = products.filter((product) =>
+                    product.title.toLowerCase().includes(searchQuery.toLowerCase())
+                );
+                setFilteredProducts(filtered); // Filter based on searchQuery
+            }
+        };
+
+        filterProducts();
+    }, [searchQuery, products]); // Filter whenever searchQuery or products change
 
     if (loading) return (
         <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
@@ -87,7 +105,7 @@ function ProductListComponent({ handlePopupClose, handleSelectedProducts }) {
 
     // Returns the number of parent checkboxes checked 
     const countCheckedMainCheckboxes = () => {
-        return products.filter(product => {
+        return filteredProducts.filter(product => {
             const productCheckboxes = selectedVariants[product.id] || {};
             return product.variants.every(variant => productCheckboxes[variant.id]);
         }).length;
@@ -95,9 +113,8 @@ function ProductListComponent({ handlePopupClose, handleSelectedProducts }) {
 
     const checkedMainCount = countCheckedMainCheckboxes();
 
-    // Add Button Functionality
     const handleAddClick = () => {
-        const selectedProducts = products
+        const selectedProducts = filteredProducts
             .filter(product => {
                 const productCheckboxes = selectedVariants[product.id] || {};
                 return product.variants.every(variant => productCheckboxes[variant.id]);
@@ -107,12 +124,16 @@ function ProductListComponent({ handlePopupClose, handleSelectedProducts }) {
                 variants: product.variants.filter(variant => selectedVariants[product.id]?.[variant.id]),
             }));
     
+        // Log the selected products and variants
+        console.log("Selected Products:", selectedProducts);
+        
         handleSelectedProducts(selectedProducts);
-    };
-
+        handlePopupClose();
+    };  
+    
 
     return (
-        <Box sx={{ bgcolor: '#F6F6F8' }}>
+        <Box sx={{ bgcolor: '#F6F6F8', overflowY: 'auto', height: '95%' }}>
 
             {/* Select Products Header and Close Icon */}
             <Box display='flex' flexDirection='row' justifyContent='space-between'>
@@ -150,9 +171,9 @@ function ProductListComponent({ handlePopupClose, handleSelectedProducts }) {
             <Divider sx={{ paddingTop: '1%' }} />
 
             {/* Products Content */}
-            {products.length > 0 ? (
-                products.map((product) => (
-                    <Box key={product.id} overflow="auto">
+            {filteredProducts.length > 0 ? (
+                filteredProducts.map((product) => (
+                    <Box key={product.id}>
                         <Box display='flex' flexDirection='row' sx={{ paddingLeft: '2.5%', paddingTop: '1%' }} >
                             <Box>
                                 <FormControlLabel
